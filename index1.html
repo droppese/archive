@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>아이템 무료 나눔 게시판 (최종 관리)</title>
+    
+    <style>
+        /* 기본 스타일 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 10px; /* 전체 패딩 축소 */
+        }
+
+        .container {
+            max-width: 1000px; 
+            margin: auto;
+            background: #fff;
+            padding: 15px; /* 내부 패딩 축소 */
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            position: relative;
+            min-height: 80vh; 
+        }
+
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #007BFF;
+            padding-bottom: 10px;
+            font-size: 1.5em; /* 모바일 대비 제목 크기 조정 */
+        }
+        
+        /* 사용자 컨트롤 영역 (상단) */
+        #userControlArea {
+            position: static; /* 모바일에서 고정 위치 해제 */
+            top: auto;
+            right: auto;
+            text-align: left;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+            line-height: 1.5;
+            display: flex; 
+            justify-content: space-between; /* 버튼과 상태 메시지 분리 */
+            flex-wrap: wrap; /* 좁은 화면에서 줄바꿈 */
+        }
+        
+        #userControlArea > div {
+            margin-top: 5px;
+        }
+
+        #userControlArea button, footer button { 
+            background-color: #ffc107; 
+            color: #333;
+            border: none;
+            padding: 6px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 5px; 
+            font-size: 0.8em; /* 버튼 크기 축소 */
+            transition: background-color 0.2s;
+            white-space: nowrap;
+        }
+
+        /* 등록 버튼 스타일 */
+        #registerButtonContainer {
+            margin: 10px 0;
+            text-align: right;
+        }
+        
+        /* 테이블 기본 스타일 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 0.85em; /* 폰트 크기 축소 */
+        }
+
+        th, td {
+            padding: 8px; /* 테이블 패딩 축소 */
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+            vertical-align: middle;
+        }
+
+        th {
+            background-color: #007BFF;
+            color: white;
+        }
+        
+        /* 이미지 스타일 */
+        .item-thumbnail {
+            width: 40px; /* 썸네일 크기 축소 */
+            height: 40px; 
+            object-fit: cover; 
+            border-radius: 4px;
+            vertical-align: middle;
+        }
+
+        /* 상세 정보 섹션 */
+        .detail-content {
+            padding: 10px;
+            font-size: 0.85em; /* 상세 정보 폰트 축소 */
+            display: block; /* 모바일에서 flex 해제 */
+        }
+        
+        /* 아이템 상세 정보 행: 초기에는 닫힘 상태 유지 */
+    tr.detail-row {
+        display: none; /* <-- 이 CSS 속성이 상세 정보를 초기 상태에서 숨깁니다. */
+        background-color: #e9ecef;
+    }
+        
+        .detail-image {
+            max-width: 100%; /* 이미지 크기 100%로 설정 */
+            height: auto;
+            display: block;
+            margin: 0 auto 10px auto; /* 중앙 정렬 */
+        }
+
+        .detail-text {
+            width: 100%; 
+            min-width: 0;
+        }
+
+        /* 아이템 등록 폼 스타일 */
+        .form-content {
+            display: block; /* 모바일에서 Grid 해제 */
+        }
+        
+        .form-content > * {
+            margin-bottom: 10px;
+        }
+
+        #itemName, #itemImageFile, #itemDescription {
+            width: 100%;
+            display: block;
+        }
+        
+        #itemDescription {
+            height: 100px; /* 텍스트 에어리어 높이 축소 */
+        }
+        
+        .form-actions {
+            text-align: center; /* 버튼 중앙 정렬 */
+            margin-top: 10px;
+        }
+
+        /* 푸터 스타일 */
+        footer {
+            text-align: center; /* 푸터 버튼 중앙 정렬 */
+            padding: 10px;
+        }
+        
+        footer button {
+            margin: 5px;
+            font-size: 0.9em;
+        }
+
+        /* ---------- 모바일 전용 미디어 쿼리 (화면 너비 600px 이하) ---------- */
+        @media (max-width: 600px) {
+            
+            body {
+                padding: 5px;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+
+            /* 테이블 - 불필요한 열 숨기기 */
+            #itemTableBody th:nth-child(3),
+            #itemTableBody td:nth-child(3) {
+                display: none; /* 등록 날짜 숨기기 */
+            }
+            
+            #itemTableBody th:nth-child(1),
+            #itemTableBody td:nth-child(1) {
+                width: 10%; /* 사진 열 축소 */
+            }
+
+            /* 상태 및 거래 액션 열 너비 조정 */
+            #itemTableBody th:nth-child(4),
+            #itemTableBody td:nth-child(4) {
+                width: 25%;
+                white-space: nowrap;
+            }
+            
+            #itemTableBody th:nth-child(5),
+            #itemTableBody td:nth-child(5) {
+                width: 25%;
+                white-space: nowrap;
+            }
+            
+            .action-btn {
+                padding: 4px 6px;
+                font-size: 0.75em;
+                display: block;
+                margin: 2px 0;
+            }
+
+            /* 관리자 목록 최적화 */
+             #adminListPage th:nth-child(4),
+             #adminListPage td:nth-child(4) {
+                display: none; /* 관리자 목록에서 등록일 숨기기 */
+            }
+            
+             #adminListPage th:nth-child(6),
+             #adminListPage td:nth-child(6) {
+                display: none; /* 관리자 목록에서 구매자 ID 숨기기 */
+            }
+            
+            .admin-action-btn {
+                padding: 4px 6px;
+                font-size: 0.75em;
+            }
+        }
+        /* 다른 기존 스타일 유지 */
+        .status-waiting { color: orange; font-weight: bold; } 
+        .status-selling { color: green; } 
+        .status-reserved { color: #800080; font-weight: bold; } 
+        .status-completed { color: gray; } 
+
+        .admin-action-btn, .action-btn {
+            padding: 5px 10px;
+            margin: 2px 5px 2px 0;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.85em;
+        }
+        
+        .trade-apply-btn { background-color: #007BFF; color: white; } 
+        .approve-btn { background-color: #28a745; color: white; } 
+        .approve-trade-btn { background-color: #17a2b8; color: white; } 
+        .confirm-trade-btn { background-color: #800080; color: white; } 
+        .cancel-trade-btn { background-color: #dc3545; color: white; } 
+        .edit-btn { background-color: #ffc107; color: #333; }
+        .cancel-btn { background-color: #6c757d; color: white; }
+        
+        .admin-thumbnail {
+            width: 40px; 
+            height: 40px; 
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="userControlArea">
+            <div>
+                <button id="viewHistoryBtn" onclick="toggleBuyerHistoryPage(true)" style="display: none;">내 신청 내역 보기</button>
+                <button id="buyerLoginBtn" onclick="toggleBuyerLogin()">구매자 로그인</button>
+            </div>
+            <p id="buyerStatus" class="status-message buyer" style="display: none;">**구매자: <span id="currentBuyerName"></span> 활성화**</p>
+        </div>
+
+        <h1>🎁 아이템 무료 나눔 게시판</h1>
+
+        <div id="mainContent">
+            <div class="search-container">
+                <input type="text" id="searchInput" placeholder="아이템 이름으로 검색...">
+            </div>
+            
+            <div id="registerButtonContainer">
+                <button onclick="toggleRegistrationForm(true)">📦 아이템 등록하기</button>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>사진</th> 
+                        <th>아이템 이름</th>
+                        <th>등록 날짜</th>
+                        <th>상태</th>
+                        <th>거래/관리</th>
+                    </tr>
+                </thead>
+                <tbody id="itemTableBody">
+                    </tbody>
+            </table>
+        </div>
+        
+        <div id="adminListPage" style="display: none;" class="admin-list-container">
+            <h2>🚨 관리 대기 목록 (등록 승인 및 거래 관리)</h2>
+            <p>신규 등록 승인, 나눔 신청 승인, 거래 확정 관리 작업을 수행합니다.</p>
+            
+            <button class="cancel-btn" onclick="toggleAdminListPage(false)" style="width: auto; margin-bottom: 20px;">메인 목록으로 돌아가기</button>
+
+            <table style="background-color: white;">
+                <thead>
+                    <tr>
+                        <th>사진</th> 
+                        <th>ID</th>
+                        <th>아이템 이름</th>
+                        <th>등록 날짜</th>
+                        <th>현재 상태</th>
+                        <th>신청/예약 구매자 ID</th>
+                        <th>액션</th>
+                    </tr>
+                </thead>
+                <tbody id="adminListBody">
+                    </tbody>
+            </table>
+        </div>
+
+        <div id="registrationFormPage" style="display: none;">
+            <h3>아이템 등록 요청</h3>
+            <div class="form-content">
+                <input type="text" id="itemName" placeholder="아이템 이름">
+                
+                <label for="itemImageFile" style="font-size: 0.9em; display: block; margin-top: 0;">아이템 사진 파일 선택:</label>
+                <input type="file" id="itemImageFile" accept="image/*">
+                
+                <textarea id="itemDescription" placeholder="상세 설명 및 나눔 조건을 입력해주세요."></textarea>
+                
+                <div class="form-actions">
+                    <button onclick="addItemAsync()">등록 요청하기</button>
+                    <button class="cancel-btn" onclick="toggleRegistrationForm(false)">취소</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="buyerHistoryPage" style="display: none;">
+            <h2>👤 <span id="historyBuyerName"></span> 님의 신청 내역</h2>
+            <p>나눔 신청 및 완료 이력을 확인할 수 있습니다.</p>
+            
+            <button class="cancel-btn" onclick="toggleBuyerHistoryPage(false)" style="width: auto; margin-bottom: 20px;">메인 목록으로 돌아가기</button>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>아이템 이름</th>
+                        <th>등록 날짜</th>
+                        <th>신청 결과</th>
+                        <th>비고</th>
+                    </tr>
+                </thead>
+                <tbody id="historyTableBody">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <footer>
+        <button id="adminListBtn" onclick="toggleAdminListPage(true)" style="display: none; background-color: #dc3545; color: white; margin-right: 15px;">🚨 관리 대기 목록 보기</button>
+        <button id="adminLoginBtn" onclick="toggleAdminLogin()">관리자 로그인</button>
+    </footer>
+
+    <script>
+        let isAdmin = false;
+        let isBuyerLoggedIn = false;
+        let currentBuyerId = null;
+
+        const buyers = {
+            'buyer1': '1111',
+            'buyer2': '2222'
+        };
+
+        const items = [
+            // status: 판매 중, 예약중, 거래 완료, 승인 대기
+            // historyStatus: 신청 거절, 구매자 취소, 예약 승인, 거래 확정, 신청 중
+            { id: 1, name: '강화된 검', status: '판매 중', description: '공격력이 10 증가하는 희귀한 검입니다. 내구도 90%.', imageUrl: 'https://via.placeholder.com/150/007BFF/FFFFFF?text=Sword', buyerId: null, registerDate: '2025-11-10', historyStatus: '신청 없음' },
+            { id: 2, name: '마법사 모자', status: '거래 완료', description: '지능을 올려주는 일반적인 모자입니다.', imageUrl: 'https://via.placeholder.com/150/28A745/FFFFFF?text=Hat', buyerId: 'buyer2', registerDate: '2025-11-11', historyStatus: '거래 확정', historyBuyerId: 'buyer2' }, 
+            { id: 3, name: '빛나는 방패', status: '예약중', description: '희미한 빛을 내는 튼튼한 방패입니다. 방어력 5 증가.', imageUrl: 'https://via.placeholder.com/150/FFC107/333333?text=Shield', buyerId: 'buyer1', registerDate: '2025-11-12', historyStatus: '예약 승인', historyBuyerId: 'buyer1' },
+            { id: 4, name: '고대 지도 조각', status: '승인 대기', description: '매우 희귀해 보이는 보석입니다.', imageUrl: 'https://via.placeholder.com/150/787878/FFFFFF?text=Map', buyerId: null, registerDate: '2025-11-13', historyStatus: '신청 없음' },
+            { id: 5, name: '신속의 포션', status: '예약중', description: '거래 신청이 들어온 포션입니다. 1회용.', imageUrl: 'https://via.placeholder.com/150/DC3545/FFFFFF?text=Potion', buyerId: 'buyer1', registerDate: '2025-11-13', historyStatus: '신청 중', historyBuyerId: 'buyer1' },
+            
+            // 15개 아이템 추가 (총 20개)
+            { id: 6, name: '낡은 가죽 갑옷', status: '판매 중', description: '기본 방어력이 있는 낡은 갑옷.', imageUrl: 'https://via.placeholder.com/150/8B4513/FFFFFF?text=Armor', buyerId: null, registerDate: '2025-11-14', historyStatus: '신청 없음' },
+            { id: 7, name: '투명 망토', status: '승인 대기', description: '숨겨진 아이템. 관리자 승인 대기 중.', imageUrl: 'https://via.placeholder.com/150/4B0082/FFFFFF?text=Cloak', buyerId: null, registerDate: '2025-11-15', historyStatus: '신청 없음' },
+            { id: 8, name: '생명의 반지', status: '판매 중', description: '체력 재생 속도를 높여주는 반지.', imageUrl: 'https://via.placeholder.com/150/FF69B4/FFFFFF?text=Ring', buyerId: null, registerDate: '2025-11-16', historyStatus: '신청 없음' },
+            { id: 9, name: '불의 정수', status: '예약중', description: '불 마법 재료.', imageUrl: 'https://via.placeholder.com/150/FF4500/FFFFFF?text=Essence', buyerId: 'buyer2', registerDate: '2025-11-17', historyStatus: '신청 중', historyBuyerId: 'buyer2' },
+            { id: 10, name: '마나 물약(대)', status: '예약중', description: '대량의 마나를 회복시켜주는 물약.', imageUrl: 'https://via.placeholder.com/150/00FFFF/000000?text=MP+Pot', buyerId: 'buyer2', registerDate: '2025-11-18', historyStatus: '예약 승인', historyBuyerId: 'buyer2' },
+            { id: 11, name: '미니 골렘 조각', status: '거래 완료', description: '작은 골렘을 소환하는 데 사용된 조각.', imageUrl: 'https://via.placeholder.com/150/A9A9A9/000000?text=Golem', buyerId: 'buyer1', registerDate: '2025-11-19', historyStatus: '거래 확정', historyBuyerId: 'buyer1' },
+            { id: 12, name: '번개 지팡이', status: '판매 중', description: '번개 마법 증폭.', imageUrl: 'https://via.placeholder.com/150/800080/FFFFFF?text=Wand', buyerId: null, registerDate: '2025-11-20', historyStatus: '신청 없음' },
+            { id: 13, name: '용의 비늘', status: '판매 중', description: '희귀 방어구 제작 재료.', imageUrl: 'https://via.placeholder.com/150/4682B4/FFFFFF?text=Scale', buyerId: null, registerDate: '2025-11-21', historyStatus: '신청 없음' },
+            { id: 14, name: '사냥꾼의 활', status: '예약중', description: '정확도가 높은 활.', imageUrl: 'https://via.placeholder.com/150/228B22/FFFFFF?text=Bow', buyerId: 'buyer1', registerDate: '2025-11-22', historyStatus: '신청 중', historyBuyerId: 'buyer1' },
+            { id: 15, name: '독 추출액', status: '판매 중', description: '무기에 독을 바르는 데 사용.', imageUrl: 'https://via.placeholder.com/150/556B2F/FFFFFF?text=Poison', buyerId: null, registerDate: '2025-11-23', historyStatus: '신청 없음' },
+            { id: 16, name: '미스터리 상자', status: '판매 중', description: '무엇이 들어있을지 아무도 모르는 상자.', imageUrl: 'https://via.placeholder.com/150/9932CC/FFFFFF?text=Box', buyerId: null, registerDate: '2025-11-24', historyStatus: '신청 없음' },
+            { id: 17, name: '영원의 촛불', status: '승인 대기', description: '절대 꺼지지 않는 신비한 촛불.', imageUrl: 'https://via.placeholder.com/150/FFD700/000000?text=Candle', buyerId: null, registerDate: '2025-11-25', historyStatus: '신청 없음' },
+            { id: 18, name: '시간의 모래', status: '판매 중', description: '시간을 되돌리는 데 필요한 마법 재료.', imageUrl: 'https://via.placeholder.com/150/B0C4DE/000000?text=Sand', buyerId: null, registerDate: '2025-11-26', historyStatus: '신청 없음' },
+            { id: 19, name: '음유시인의 리라', status: '거래 완료', description: '아름다운 음악을 연주하는 악기.', imageUrl: 'https://via.placeholder.com/150/CD853F/FFFFFF?text=Lyre', buyerId: 'buyer2', registerDate: '2025-11-27', historyStatus: '거래 확정', historyBuyerId: 'buyer2' },
+            { id: 20, name: '달빛 수정구', status: '예약중', description: '밤에도 주변을 밝게 비춰주는 수정구.', imageUrl: 'https://via.placeholder.com/150/DDA0DD/000000?text=Crystal', buyerId: 'buyer1', registerDate: '2025-11-28', historyStatus: '예약 승인', historyBuyerId: 'buyer1' }
+        ];
+        
+        function getTodayDate() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function getStatusClass(status) {
+            if (status === '승인 대기') return 'status-waiting';
+            if (status === '판매 중') return 'status-selling'; 
+            if (status === '예약중') return 'status-reserved'; 
+            if (status === '거래 완료') return 'status-completed'; 
+            return '';
+        }
+        
+        function getDisplayStatusText(internalStatus, isBuyerMatch, historyStatus) {
+            if (internalStatus === '승인 대기') return '승인 대기';
+            if (internalStatus === '판매 중') return '신청 가능'; 
+            if (internalStatus === '거래 완료') {
+                return isBuyerMatch ? '나눔 완료! (획득)' : '나눔 완료'; 
+            }
+            
+            if (internalStatus === '예약중') {
+                if (historyStatus === '예약 승인' && isBuyerMatch) {
+                     return '예약 중(나)'; 
+                } else if (historyStatus === '신청 중' && isBuyerMatch) {
+                    return '예약 중(신청)'; 
+                } else if (historyStatus === '예약 승인' && !isBuyerMatch) {
+                    return '예약 중'; 
+                } else {
+                    return '예약 중'; 
+                }
+            }
+            
+            return internalStatus;
+        }
+
+        // --- 페이지 전환 함수 ---
+
+        function toggleBuyerHistoryPage(show) {
+            const mainContent = document.getElementById('mainContent');
+            const historyPage = document.getElementById('buyerHistoryPage');
+            const registrationFormPage = document.getElementById('registrationFormPage');
+            const adminPage = document.getElementById('adminListPage');
+
+            if (show) {
+                if (!isBuyerLoggedIn) {
+                    alert('구매자로 로그인해야 신청 내역을 볼 수 있습니다.');
+                    return;
+                }
+                mainContent.style.display = 'none';
+                registrationFormPage.style.display = 'none';
+                adminPage.style.display = 'none';
+                historyPage.style.display = 'block';
+                document.getElementById('historyBuyerName').textContent = currentBuyerId;
+                renderBuyerHistory();
+            } else {
+                mainContent.style.display = 'block';
+                historyPage.style.display = 'none';
+                renderItems();
+            }
+        }
+        
+        function toggleRegistrationForm(show) {
+            const mainContent = document.getElementById('mainContent');
+            const formPage = document.getElementById('registrationFormPage');
+            const historyPage = document.getElementById('buyerHistoryPage');
+            const adminPage = document.getElementById('adminListPage');
+
+            if (show) {
+                mainContent.style.display = 'none';
+                historyPage.style.display = 'none';
+                adminPage.style.display = 'none';
+                formPage.style.display = 'block';
+                document.getElementById('itemName').value = '';
+                document.getElementById('itemImageFile').value = '';
+                document.getElementById('itemDescription').value = '';
+            } else {
+                mainContent.style.display = 'block';
+                formPage.style.display = 'none';
+                renderItems(); 
+            }
+        }
+        
+        function toggleAdminListPage(show) {
+            const mainContent = document.getElementById('mainContent');
+            const historyPage = document.getElementById('buyerHistoryPage');
+            const formPage = document.getElementById('registrationFormPage');
+            const adminPage = document.getElementById('adminListPage');
+
+            if (show) {
+                if (!isAdmin) {
+                    alert('관리자로 로그인해야 접근할 수 있습니다.');
+                    return;
+                }
+                mainContent.style.display = 'none';
+                historyPage.style.display = 'none';
+                formPage.style.display = 'none';
+                adminPage.style.display = 'block';
+                renderAdminList(); 
+            } else {
+                mainContent.style.display = 'block';
+                adminPage.style.display = 'none';
+                renderItems(); 
+            }
+        }
+        
+        // --- 렌더링 함수 ---
+
+        function renderItems(filteredItems = items) {
+            const tableBody = document.getElementById('itemTableBody');
+            tableBody.innerHTML = ''; 
+
+            // 1. 승인 대기 아이템 제외
+            let approvedItems = filteredItems.filter(item => item.status !== '승인 대기');
+            
+            // 2. 아이템 상태별 정렬 순서 정의 (거래 완료를 맨 아래로)
+            const statusOrder = {
+                '판매 중': 1,
+                '예약중': 2,
+                '거래 완료': 3
+            };
+            
+            // 3. 정렬 로직 적용
+            approvedItems.sort((a, b) => {
+                const orderA = statusOrder[a.status] || 99;
+                const orderB = statusOrder[b.status] || 99;
+                return orderA - orderB;
+            });
+            // 정렬 로직 적용 완료
+
+            approvedItems.forEach(item => {
+                const row = document.createElement('tr');
+                row.classList.add('item-row');
+                
+                const displayImageUrl = item.imageUrl && item.imageUrl.trim() !== '' ? item.imageUrl : 'https://via.placeholder.com/50/808080/FFFFFF?text=No+Img';
+                
+                const isBuyerMatch = isBuyerLoggedIn && item.buyerId === currentBuyerId;
+
+                let statusText = getDisplayStatusText(item.status, isBuyerMatch, item.historyStatus); 
+                let statusClass = getStatusClass(item.status);
+                
+                let actionButton = '';
+                if (isAdmin) {
+                    actionButton = `
+                        <button class="admin-action-btn edit-btn" onclick="editItem(${item.id})">수정</button>
+                        <button class="admin-action-btn delete-btn item-delete-btn" data-item-id="${item.id}">삭제</button>
+                    `;
+                } else if (isBuyerLoggedIn && item.status === '판매 중') { 
+                    actionButton = `<button class="action-btn trade-apply-btn" onclick="applyForTrade(${item.id})">신청</button>`;
+                } else if (isBuyerLoggedIn && item.status === '예약중' && isBuyerMatch) {
+                    actionButton = `<button class="action-btn cancel-trade-btn" onclick="cancelTradeByBuyer(${item.id})">예약 취소</button>`;
+                } else if (!isBuyerLoggedIn && item.status === '판매 중') {
+                    actionButton = `<span style="color:#17a2b8;">로그인 후 신청</span>`;
+                } else if (item.status === '예약중' && item.buyerId !== currentBuyerId) {
+                    actionButton = `<span class="${getStatusClass(item.status)}">${statusText}</span>`; 
+                }
+
+                row.innerHTML = `
+                    <td>
+                        <img src="${displayImageUrl}" alt="${item.name} 이미지" class="item-thumbnail">
+                    </td>
+                    <td>${item.name}</td>
+                    <td>${item.registerDate || '-'}</td>
+                    <td class="${statusClass}">${statusText}</td>
+                    <td>${actionButton}</td>
+                `;
+                
+                row.onclick = () => toggleDetails(item.id);
+                tableBody.appendChild(row);
+                
+                if (isAdmin) {
+                    const deleteButton = row.querySelector(`.item-delete-btn[data-item-id="${item.id}"]`);
+                    if (deleteButton) {
+                        deleteButton.addEventListener('click', (event) => {
+                            event.stopPropagation();
+                            deleteItem(item.id);
+                        });
+                    }
+                }
+
+                const detailRow = document.createElement('tr');
+                detailRow.classList.add('detail-row');
+                detailRow.id = `detail-${item.id}`;
+                
+                const formattedDescription = (item.description || '설명이 없습니다.').replace(/\n/g, '<br>');
+                const detailImageUrl = item.imageUrl && item.imageUrl.trim() !== '' ? item.imageUrl : 'https://via.placeholder.com/250/808080/FFFFFF?text=No+Image';
+
+                detailRow.innerHTML = `
+                    <td colspan="5"> 
+                        <div class="detail-content">
+                            <img src="${detailImageUrl}" alt="${item.name} 상세 이미지" class="detail-image">
+                            <div class="detail-text">
+                                <strong>상세 설명:</strong><br>
+                                ${formattedDescription}
+                            </div>
+                        </div>
+                    </td>
+                `;
+                tableBody.appendChild(detailRow);
+            });
+            
+            // 푸터의 관리 대기 버튼 제어
+            const adminListBtn = document.getElementById('adminListBtn');
+            const adminPageVisible = document.getElementById('adminListPage').style.display !== 'none';
+
+            if (isAdmin && !adminPageVisible) {
+                const adminCount = items.filter(item => item.status === '승인 대기' || item.status === '예약중').length;
+                adminListBtn.style.display = 'inline-block';
+                adminListBtn.textContent = `🚨 관리 대기 목록 보기 (${adminCount}건)`;
+            } else {
+                adminListBtn.style.display = 'none';
+            }
+        }
+
+        function renderBuyerHistory() {
+            const historyBody = document.getElementById('historyTableBody');
+            historyBody.innerHTML = '';
+
+            const historyItems = items.filter(item => 
+                item.historyBuyerId === currentBuyerId
+            );
+
+            historyItems.forEach(item => {
+                let displayStatus = '';
+                let statusColor = '';
+
+                if (item.historyStatus === '거래 확정' && item.status === '거래 완료') {
+                    displayStatus = '거래 확정 (나눔 완료)';
+                    statusColor = 'green';
+                } else if (item.historyStatus === '예약 승인' && item.status === '예약중') {
+                    displayStatus = '예약 승인 (거래 준비 중)';
+                    statusColor = '#800080';
+                } else if (item.historyStatus === '신청 중' && item.status === '예약중') {
+                    displayStatus = '신청 중 (예약 대기)';
+                    statusColor = '#007BFF';
+                } else if (item.historyStatus === '신청 거절') {
+                    displayStatus = '신청 거절 (관리자 취소)';
+                    statusColor = 'red';
+                } else if (item.historyStatus === '구매자 취소') {
+                    displayStatus = '신청/예약 취소 (구매자 취소)';
+                    statusColor = 'orange';
+                } else {
+                    return; 
+                }
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.name}</td>
+                    <td>${item.registerDate || '-'}</td>
+                    <td style="color: ${statusColor}; font-weight: bold;">${displayStatus}</td>
+                    <td>${item.description.substring(0, 30)}...</td>
+                `;
+                historyBody.appendChild(row);
+            });
+            
+            if (historyItems.length === 0) {
+                 historyBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">아직 나눔 신청 내역이 없습니다.</td></tr>';
+            }
+        }
+
+        function renderAdminList() {
+            if (!isAdmin) return;
+
+            const adminListBody = document.getElementById('adminListBody');
+            adminListBody.innerHTML = '';
+            
+            // 관리 대상 아이템: 승인 대기, 예약중
+            const adminItems = items.filter(item => item.status === '승인 대기' || item.status === '예약중');
+
+            if (adminItems.length > 0) {
+                adminItems.forEach(item => {
+                    let actions = '';
+                    let displayStatus = '';
+
+                    if (item.status === '승인 대기') {
+                        displayStatus = '등록 승인 대기';
+                        actions = `
+                            <button class="admin-action-btn approve-btn" onclick="approveItem(${item.id})">등록 승인</button>
+                            <button class="admin-action-btn delete-btn" onclick="deleteItem(${item.id})">삭제</button>
+                        `;
+                    } else if (item.status === '예약중') {
+                        if (item.historyStatus === '신청 중') {
+                            // 예약 대기 상태 -> 1단계 승인 필요
+                            displayStatus = '나눔 신청 (1단계)'; 
+                            actions = `
+                                <button class="admin-action-btn approve-trade-btn" onclick="approveTrade(${item.id})">나눔 신청 승인</button> 
+                                <button class="admin-action-btn cancel-trade-btn" onclick="cancelTradeByAdmin(${item.id})">신청 취소</button>
+                            `;
+                        } else if (item.historyStatus === '예약 승인') {
+                            // 예약 확정 상태 -> 최종 확정 필요
+                            displayStatus = '나눔 진행 (2단계)'; 
+                            actions = `
+                                <button class="admin-action-btn confirm-trade-btn" onclick="confirmTrade(${item.id})">나눔 완료</button> 
+                                <button class="admin-action-btn cancel-trade-btn" onclick="cancelTradeByAdmin(${item.id})">예약 취소</button>
+                            `;
+                        } else {
+                            displayStatus = '예약중 (상태 확인 필요)';
+                            actions = `
+                                <button class="admin-action-btn cancel-trade-btn" onclick="cancelTradeByAdmin(${item.id})">예약 취소</button>
+                            `;
+                        }
+                    }
+                    
+                    const displayImageUrl = item.imageUrl && item.imageUrl.trim() !== '' ? item.imageUrl : 'https://via.placeholder.com/40/808080/FFFFFF?text=No';
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>
+                            <img src="${displayImageUrl}" alt="${item.name} 이미지" class="admin-thumbnail">
+                        </td>
+                        <td>${item.id}</td>
+                        <td>${item.name}</td>
+                        <td>${item.registerDate || '-'}</td>
+                        <td class="${getStatusClass(item.status)}">${displayStatus}</td>
+                        <td>${item.buyerId || '-'}</td>
+                        <td>${actions}</td>
+                    `;
+                    adminListBody.appendChild(row);
+                });
+            } else {
+                adminListBody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #555;">현재 관리 대기 중인 아이템이 없습니다.</td></tr>';
+            }
+        }
+        
+        // --- 액션 후 목록 갱신 헬퍼 ---
+
+        function updateListsAfterAction() {
+            if (document.getElementById('adminListPage').style.display !== 'none') {
+                 renderAdminList(); 
+                 renderItems(); // 푸터 버튼 카운트 갱신을 위해 메인 목록도 갱신
+            } else if (document.getElementById('mainContent').style.display !== 'none') {
+                renderItems(); 
+            }
+            if (isBuyerLoggedIn && document.getElementById('buyerHistoryPage').style.display !== 'none') {
+                renderBuyerHistory();
+            }
+        }
+        
+        function toggleDetails(itemId) {
+            const detailRow = document.getElementById(`detail-${itemId}`);
+            if (detailRow.style.display === 'table-row') {
+                detailRow.style.display = 'none';
+            } else {
+                document.querySelectorAll('.detail-row').forEach(row => {
+                    if (row.id !== `detail-${itemId}`) {
+                        row.style.display = 'none';
+                    }
+                });
+                detailRow.style.display = 'table-row';
+            }
+        }
+
+        // --- 로그인/로그아웃 함수 ---
+        
+        function toggleBuyerLogin() {
+            if (isBuyerLoggedIn) {
+                logoutBuyer();
+            } else {
+                loginBuyer();
+            }
+        }
+
+        function loginBuyer() {
+            const buyerIdInput = prompt("구매자 ID를 입력하세요. (테스트 ID: buyer1, buyer2)");
+            if (!buyerIdInput) return;
+
+            const passwordInput = prompt("비밀번호를 입력하세요. (buyer1: 1111, buyer2: 2222)");
+            if (!passwordInput) return;
+
+            if (buyers[buyerIdInput] === passwordInput) {
+                isBuyerLoggedIn = true;
+                currentBuyerId = buyerIdInput;
+                document.getElementById('buyerLoginBtn').innerText = '구매자 로그아웃';
+                document.getElementById('currentBuyerName').innerText = currentBuyerId;
+                document.getElementById('buyerStatus').style.display = 'block';
+                document.getElementById('viewHistoryBtn').style.display = 'inline-block';
+                renderItems(); 
+            } else {
+                alert('ID 또는 비밀번호가 틀렸습니다.');
+            }
+        }
+
+        function logoutBuyer() {
+            isBuyerLoggedIn = false;
+            currentBuyerId = null;
+            document.getElementById('buyerLoginBtn').innerText = '구매자 로그인';
+            document.getElementById('buyerStatus').style.display = 'none';
+            document.getElementById('viewHistoryBtn').style.display = 'none';
+            
+            if (document.getElementById('buyerHistoryPage').style.display !== 'none') {
+                toggleBuyerHistoryPage(false);
+            }
+            renderItems();
+        }
+        
+        function toggleAdminLogin() {
+            if (isAdmin) {
+                logoutAdmin();
+            } else {
+                loginAdmin();
+            }
+        }
+
+        function loginAdmin() {
+            const password = prompt("관리자 비밀번호를 입력하세요. (비밀번호: 1234)");
+            if (password === '1234') {
+                isAdmin = true;
+                document.getElementById('adminLoginBtn').innerText = '관리자 로그아웃';
+                renderItems(); 
+            } else if (password !== null) {
+                alert('비밀번호가 틀렸습니다.');
+            }
+        }
+
+        function logoutAdmin() {
+            isAdmin = false;
+            document.getElementById('adminLoginBtn').innerText = '관리자 로그인';
+            document.getElementById('adminListBtn').style.display = 'none'; 
+            if (document.getElementById('adminListPage').style.display !== 'none') {
+                toggleAdminListPage(false); 
+            } else {
+                 renderItems(); 
+            }
+        }
+        
+        // --- 거래/관리 액션 함수 ---
+
+        function applyForTrade(itemId) {
+            if (!isBuyerLoggedIn || isAdmin) {
+                alert('구매자로 로그인해야 신청할 수 있습니다.');
+                return;
+            }
+            
+            const item = items.find(i => i.id === itemId);
+            if (item && item.status === '판매 중') { 
+                item.status = '예약중'; // 상태 간소화 적용
+                item.buyerId = currentBuyerId;
+                item.historyStatus = '신청 중';
+                item.historyBuyerId = currentBuyerId;
+                alert(`${item.name}에 신청이 완료되었습니다. 관리자의 1단계 승인을 기다려주세요.`);
+                updateListsAfterAction(); 
+            }
+        }
+        
+        // 1단계 승인: 예약중(신청 중) -> 예약중(예약 승인)
+        function approveTrade(itemId) {
+            if (!isAdmin) return;
+            
+            const item = items.find(i => i.id === itemId);
+            if (item && item.status === '예약중' && item.historyStatus === '신청 중') { 
+                // 상태는 '예약중'으로 유지하되, historyStatus를 변경하여 1단계 승인 완료를 표시
+                item.historyStatus = '예약 승인'; 
+                alert(`${item.name}의 나눔 신청이 1단계 승인되어 '거래 예약 확정' 상태로 변경되었습니다. (실물 거래 후 '나눔 완료' 필요)`);
+                updateListsAfterAction(); 
+            }
+        }
+        
+        // 2단계 승인: 예약중(예약 승인) -> 거래 완료 (최종 확정)
+        function confirmTrade(itemId) {
+             if (!isAdmin) return;
+            
+            const item = items.find(i => i.id === itemId);
+            if (item && item.status === '예약중' && item.historyStatus === '예약 승인') { 
+                item.status = '거래 완료'; 
+                item.historyStatus = '거래 확정';
+                alert(`${item.name}의 거래가 최종 확정되어 '나눔 완료' 상태로 변경되었습니다.`); 
+                updateListsAfterAction(); 
+            }
+        }
+        
+        function approveItem(itemId) {
+            if (!isAdmin) return;
+            
+            const item = items.find(i => i.id === itemId);
+            if (item && item.status === '승인 대기') {
+                item.status = '판매 중'; 
+                alert(`${item.name} 아이템이 목록에 등록(승인)되었습니다.`);
+                updateListsAfterAction(); 
+            }
+        }
+        
+        function deleteItem(itemId) {
+            if (!isAdmin) return;
+
+            if (confirm("정말로 이 아이템을 삭제하시겠습니까?")) {
+                const index = items.findIndex(i => i.id === itemId);
+                if (index > -1) {
+                    items.splice(index, 1);
+                    updateListsAfterAction(); 
+                }
+            }
+        }
+        
+        function cancelTradeByAdmin(itemId) {
+            if (!isAdmin) return;
+
+            const item = items.find(i => i.id === itemId);
+            
+            if (item && item.status === '예약중') {
+                if (confirm(`${item.name}에 대한 나눔 신청/예약을 취소하고 '신청 가능' 상태로 되돌리시겠습니까?`)) {
+                    item.historyStatus = '신청 거절';
+                    item.historyBuyerId = item.buyerId; 
+                    
+                    item.status = '판매 중'; 
+                    item.buyerId = null; 
+                    alert(`${item.name}의 나눔 신청/예약이 취소되고 '신청 가능' 상태로 복귀했습니다.`);
+                    updateListsAfterAction(); 
+                }
+            }
+        }
+        
+        function cancelTradeByBuyer(itemId) {
+            if (!isBuyerLoggedIn) return;
+
+            const item = items.find(i => i.id === itemId);
+            
+            if (item && item.status === '예약중' && item.buyerId === currentBuyerId) {
+                if (confirm(`${item.name}에 대한 신청/예약을 취소하시겠습니까? (상태: 예약중)`)) {
+                    item.status = '판매 중'; 
+                    item.historyStatus = '구매자 취소';
+                    item.historyBuyerId = item.buyerId; 
+                    item.buyerId = null; 
+                    alert(`${item.name}의 신청/예약이 취소되었습니다.`);
+                    
+                    updateListsAfterAction();
+                }
+            }
+        }
+        
+        function editItem(itemId) {
+            if (!isAdmin) return;
+
+            const item = items.find(i => i.id === itemId);
+            if (!item) return;
+
+            const newName = prompt(`[${item.name}]의 새 이름을 입력하세요:`, item.name);
+            if (newName === null) return; 
+
+            const newDescription = prompt(`[${item.name}]의 새 상세 설명을 입력하세요:`, item.description);
+            if (newDescription === null) return;
+            
+            const newImageUrl = prompt(`[${item.name}]의 새 이미지 URL을 입력하세요 (변경하지 않으려면 공백):`, item.imageUrl);
+            
+            item.name = newName.trim();
+            item.description = newDescription.trim();
+            
+            if (newImageUrl.trim() !== "") {
+                item.imageUrl = newImageUrl.trim();
+            }
+
+            alert(`아이템 [${item.id}]의 정보가 수정되었습니다.`);
+            renderItems();
+        }
+        
+        // --- 아이템 등록 함수 ---
+
+        function convertFileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function addItemAsync() {
+            const itemNameInput = document.getElementById('itemName');
+            const itemImageFileInput = document.getElementById('itemImageFile');
+            const itemDescriptionInput = document.getElementById('itemDescription');
+            
+            const name = itemNameInput.value.trim();
+            const description = itemDescriptionInput.value.trim(); 
+            const file = itemImageFileInput.files[0];
+
+            if (!name || !description) {
+                alert('아이템 이름과 상세 설명을 모두 입력해주세요.');
+                return;
+            }
+
+            let imageUrl = '';
+
+            if (file) {
+                try {
+                    imageUrl = await convertFileToBase64(file);
+                } catch (error) {
+                    console.error('파일 변환 오류:', error);
+                    alert('이미지 파일 변환에 실패했습니다.');
+                    return;
+                }
+            } else {
+                 imageUrl = 'https://via.placeholder.com/150/808080/FFFFFF?text=No+Image';
+            }
+
+            const newId = items.length > 0 ? Math.max(...items.map(i => i.id)) + 1 : 1;
+
+            items.push({ 
+                id: newId, 
+                name: name, 
+                status: '승인 대기', 
+                description: description,
+                imageUrl: imageUrl,
+                buyerId: null,
+                registerDate: getTodayDate(),
+                historyStatus: '신청 없음'
+            });
+            
+            alert(`아이템 [${name}]이(가) 등록 요청되었습니다. 관리자의 승인을 기다려주세요.`);
+
+            toggleRegistrationForm(false);
+        }
+
+        // --- 검색 기능 ---
+
+        function searchItems() {
+            const searchInput = document.getElementById('searchInput');
+            const searchTerm = searchInput.value.trim().toLowerCase();
+
+            const filteredItems = items.filter(item => 
+                item.name.toLowerCase().includes(searchTerm) || 
+                item.description.toLowerCase().includes(searchTerm)
+            );
+
+            renderItems(filteredItems);
+        }
+
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('input', searchItems);
+
+        // --- 초기 실행 ---
+        renderItems();
+    </script>
+</body>
+</html>
